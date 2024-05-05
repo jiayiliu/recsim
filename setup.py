@@ -33,7 +33,7 @@ install_requires = [
     'gym',
     'numpy',
     'scipy',
-    'tensorflow',
+    'tensorflow==2.15.1',
 ]
 
 recsim_description = (

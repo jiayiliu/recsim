@@ -29,7 +29,7 @@ from gym import spaces
 import numpy as np
 from recsim.simulator import environment
 import tensorflow.compat.v1 as tf
-
+import tensorflow.summary as tf_summary
 
 flags.DEFINE_bool(
     'debug_mode', False,
@@ -123,7 +123,7 @@ class Runner(object):
     # Reset the tf default graph to avoid name collisions from previous runs
     # before doing anything else.
     tf.reset_default_graph()
-    self._summary_writer = tf.summary.FileWriter(self._output_dir)
+    self._summary_writer = tf_summary.create_file_writer(self._output_dir)
     if self._episode_log_file:
       self._episode_writer = tf.io.TFRecordWriter(
           os.path.join(self._output_dir, self._episode_log_file))
@@ -141,10 +141,15 @@ class Runner(object):
     if not self._agent.multi_user and isinstance(
         self._env.environment, environment.MultiUserEnvironment):
       raise ValueError('Single-user agent requires single-user environment.')
-    self._summary_writer.add_graph(graph=tf.get_default_graph())
-    self._sess.run(tf.global_variables_initializer())
-    self._sess.run(tf.local_variables_initializer())
-
+    
+    # some agents have no parameter
+    graph = tf.get_default_graph()
+    if graph.num_operations() != 0:
+      with self._summary_writer.as_default():
+        tf_summary.graph(graph)
+      self._sess.run(tf.global_variables_initializer())
+      self._sess.run(tf.local_variables_initializer())
+    
   def _initialize_checkpointer_and_maybe_resume(self, checkpoint_file_prefix):
     """Reloads the latest checkpoint if it exists.
 
@@ -319,10 +324,9 @@ class Runner(object):
     """Writes the metrics to Tensorboard summaries."""
 
     def add_summary(tag, value):
-      summary = tf.Summary(
-          value=[tf.Summary.Value(tag=tag + '/' + suffix, simple_value=value)])
-      self._summary_writer.add_summary(summary, step)
-
+      with self._summary_writer.as_default(step):
+        tf_summary.scalar(tag + '/' + suffix, value)
+  
     num_steps = np.sum(self._stats['episode_length'])
     time_per_step = np.sum(self._stats['episode_time']) / num_steps
 

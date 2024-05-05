@@ -30,7 +30,7 @@ from __future__ import print_function
 from absl import app
 from absl import flags
 import numpy as np
-from recsim.agents import full_slate_q_agent
+from recsim.agents import random_agent
 from recsim.environments import interest_evolution
 from recsim.simulator import runner_lib
 
@@ -52,12 +52,12 @@ def create_agent(sess, environment, eval_mode, summary_writer=None):
     An instance of FullSlateQAgent.
   """
   kwargs = {
-      'observation_space': environment.observation_space,
+      # 'observation_space': environment.observation_space,
       'action_space': environment.action_space,
-      'summary_writer': summary_writer,
-      'eval_mode': eval_mode,
+      # 'summary_writer': summary_writer,
+      # 'eval_mode': eval_mode,
   }
-  return full_slate_q_agent.FullSlateQAgent(sess, **kwargs)
+  return random_agent.RandomAgent(**kwargs)
 
 
 def main(argv):
